@@ -5,6 +5,10 @@
 *.iml
 .idea
 
+# Rar
+*.rar
+*.zip
+
 # npm
 node_modules
 

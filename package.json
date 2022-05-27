@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-trans-them",
 	"version": "1.0.1",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "This is a small plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -12,6 +12,11 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@codemirror/fold": "^0.19.2",
+		"@codemirror/language": "^0.19.7",
+		"@codemirror/panel": "^0.19.1",
+		"@codemirror/state": "^0.19.6",
+		"@codemirror/view": "^0.19.33",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "^5.2.0",
 		"@typescript-eslint/parser": "^5.2.0",
