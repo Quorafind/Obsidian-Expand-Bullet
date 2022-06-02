@@ -1,6 +1,6 @@
 {
-	"name": "obsidian-trans-them",
-	"version": "1.0.1",
+	"name": "obsidian-expand-bullet",
+	"version": "1.0.2",
 	"description": "This is a small plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {

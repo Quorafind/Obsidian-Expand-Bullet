@@ -1,10 +1,7 @@
-import { App, Editor, MarkdownView, Menu, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Menu, normalizePath, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { foldable } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { createNewMDNote } from "obsidian-community-lib"
-
-// Remember to rename these classes and interfaces!
 
 interface TransThemSettings {
 	removeFirstLine: boolean;
@@ -23,7 +20,7 @@ export default class TransThemPlugin extends Plugin {
 		this.addSettingTab(new TransThemSettingTab(this.app, this));
 		await this.loadSettings();
 		this.app.workspace.onLayoutReady(this.onLayoutReady.bind(this));
-		
+
 		this.registerEvent(
 			this.app.workspace.on('editor-menu', (menu: Menu, editor: Editor, view: MarkdownView) => {
 			  const range = editor.getCursor();
@@ -47,25 +44,6 @@ export default class TransThemPlugin extends Plugin {
                     .setTitle(`Transfer bullet to note`)
                     .onClick(async () => {
 						await this.createNoteWithBulletContent(editor, this.settings.removeFirstLine);
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						// const view: EditorView = (editor as any).cm;
-                        // console.log(`Transform bullet to note`);
-					    // const offset = editor.posToOffset(newRange);
-						// const line = view.state.doc.lineAt(offset);
-					    // const lineRange = this.calculateRangeForTransform(view.state, offset);
-						// if(!lineRange) {
-						// 	return;
-						// }
-						// // const regexForTabAndSpace = this.shouldReplaceTextRegex(line.text);
-						// const tokenForTabAndSpace = this.shouldReplaceToken(line.text);
-						// const text = editor.getRange(editor.offsetToPos(lineRange.from), editor.offsetToPos(lineRange.to));
-						// const content = this.shouldInsertContent(text, tokenForTabAndSpace);
-						
-						// // console.log(regexForTabAndSpace);
-						// // const content = editor.offsetToPos(lineRange.from).line != editor.offsetToPos(lineRange.to).line ? editor.getRange(editor.offsetToPos(lineRange.from), editor.offsetToPos(lineRange.to)).replace(/^\s*(?:([-*+]|\d+\.))/,"$1") : editor.getRange(editor.offsetToPos(lineRange.from), editor.offsetToPos(lineRange.to));
-						// const createdFile = await createNewMDNote(line?.text.replace(/^\s*([-*+]|\d+\.)\s+/g,""), app.workspace.getActiveFile()?.path);
-						// app.vault.modify(createdFile, content);
-						// app.workspace.getLeaf(true).openFile(createdFile);
                     })
                 );
 			}),
@@ -73,7 +51,7 @@ export default class TransThemPlugin extends Plugin {
 	}
 
 	onunload() {
-		
+
 	}
 
 	async loadSettings() {
@@ -97,7 +75,6 @@ export default class TransThemPlugin extends Plugin {
 	public async createNoteWithBulletContent(editor: Editor, removeFirstLine: boolean) {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const view: EditorView = (editor as any).cm;
-		console.log(`Transform bullet into note`);
 		const range = editor.getCursor();
 		const currentLine = editor.getLine(range.line);
 		if(!(/^\s*[-\*\+]\s+/.test(currentLine))) {
@@ -120,12 +97,17 @@ export default class TransThemPlugin extends Plugin {
 			const contentEndPositions = editor.offsetToPos(lineRange.to);
 
 			editor.replaceRange(currentLine.replace(titleText, linkText), contentBeginPositions, contentEndPositions);
-		} 
+		}
 		const content = this.shouldInsertContent(text, tokenForTabAndSpace, removeFirstLine);
-		
-		const createdFile = await createNewMDNote(currentLine?.replace(/^\s*([-*+]|\d+\.)\s+/g,""), app.workspace.getActiveFile()?.path);
-		app.vault.modify(createdFile, content);
-		app.workspace.getLeaf(true).openFile(createdFile);
+
+		// Original Code from https://github.com/obsidian-community/obsidian-community-lib/blob/d6196aac3c413ba6fe71106736f7c998891f6203/src/utils.ts#L189
+		const newFileFolder = app.fileManager.getNewFileParent(app.workspace.getActiveFile()?.path).path;
+		const newFilePath = normalizePath(
+			`${newFileFolder}${newFileFolder === "/" ? "" : "/"}${this.addMD(currentLine?.replace(/^\s*([-*+]|\d+\.)\s+/g,""))}`
+		);
+
+		const createdFile = await app.vault.create(newFilePath, content);
+		await app.workspace.getUnpinnedLeaf().openFile(createdFile);
 	}
 
 	public shouldInsertContent(text: string, token: string | null, removeFirstLine: boolean): string {
@@ -134,14 +116,14 @@ export default class TransThemPlugin extends Plugin {
 		if(token) {
 			for(let i = 0; i < spiltContentByLineBreak.length; i++) {
 				if(!i) {
-				 	if(!removeFirstLine) { 
+				 	if(!removeFirstLine) {
 						tempContent = spiltContentByLineBreak[0].replace(token, '');
 					}
 					continue;
 				}
-				
+
 				if(removeFirstLine) {
-					tempContent += (i == 1 ? `${spiltContentByLineBreak[i].replace(token, '').replace(token[0], '')}` : `\n${spiltContentByLineBreak[i].replace(token, '').replace(token[0], '')}`);
+					tempContent += (i === 1 ? `${spiltContentByLineBreak[i].replace(token, '').replace(token[0], '')}` : `\n${spiltContentByLineBreak[i].replace(token, '').replace(token[0], '')}`);
 				}else{
 					tempContent += `\n${spiltContentByLineBreak[i].replace(token, '')}`;
 				}
@@ -158,17 +140,16 @@ export default class TransThemPlugin extends Plugin {
 				tempToken = this.shouldReplaceToken(spiltContentByLineBreak[1]);
 			}
 
-			console.log(tempToken);
 			for(let i = 0; i < spiltContentByLineBreak.length; i++) {
 				if(!i) {
-				 	if(!removeFirstLine) { 
+				 	if(!removeFirstLine) {
 						tempContent = spiltContentByLineBreak[0].replace(tempToken, '');
 					}
 					continue;
 				}
-				
+
 				if(removeFirstLine) {
-					tempContent += (i == 1 ? `${spiltContentByLineBreak[i].replace(tempToken, '').replace(tempToken[0] === ' '? '' : '\t', '')}` : `\n${spiltContentByLineBreak[i].replace(tempToken, '').replace(tempToken[0] === ' '? '' : '\t', '')}`);
+					tempContent += (i === 1 ? `${spiltContentByLineBreak[i].replace(tempToken, '').replace(tempToken[0] === ' '? '' : '\t', '')}` : `\n${spiltContentByLineBreak[i].replace(tempToken, '').replace(tempToken[0] === ' '? '' : '\t', '')}`);
 				}else{
 					tempContent += `\n${spiltContentByLineBreak[i].replace(tempToken, '')}`;
 				}
@@ -187,24 +168,9 @@ export default class TransThemPlugin extends Plugin {
 		return tabAndSpace;
 	}
 
-	// public shouldReplaceTextRegex(text: string): RegExp {
-	// 	const beginWithTab = text.startsWith('\t');
-	// 	const beginWithSpace = text.startsWith(' ');
-	// 	let tokenToBeReplaced;
-	// 	if(!beginWithSpace && !beginWithTab) {
-	// 		return null;
-	// 	}
-	// 	const tabAndSpace = text.match(/^\s*/g)[0];
-	// 	const countTabAndSpace = (tabAndSpace.match(/\t| /g) || []).length;
-	// 	if(app.vault.getConfig('useTab') && beginWithTab) {
-	// 		tokenToBeReplaced = '\\t\{' + countTabAndSpace + '\}'; 
-	// 	}
-	// 	if(beginWithSpace) {
-	// 		tokenToBeReplaced = '\\s\{' + countTabAndSpace + '\}';
-	// 	}
-		
-	// 	return new RegExp(tokenToBeReplaced, 'g'); 
-	// }
+	private addMD = (noteName: string): string => {
+		return noteName.match(/\.MD$|\.md$/m) ? noteName : noteName + ".md";
+	};
 
 	public calculateRangeForTransform(state: EditorState, pos: number) {
 		const line = state.doc.lineAt(pos);
@@ -254,7 +220,7 @@ class TransThemSettingTab extends PluginSettingTab {
 					this.plugin.settings.removeFirstLine = value;
 					this.applySettingsUpdate();
         		}));
-		
+
 		new Setting(containerEl)
 			.setName('Keep Original Text')
 			.setDesc('keep original text when create new note')

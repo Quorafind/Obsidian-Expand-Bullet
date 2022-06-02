@@ -1,7 +1,7 @@
 {
-	"id": "obsidian-trans-them",
-	"name": "Trans Them",
-	"version": "1.0.1",
+	"id": "obsidian-expand-bullet",
+	"name": "Expand Bullet",
+	"version": "1.0.2",
 	"minAppVersion": "0.12.0",
 	"description": "A plugin for transforming bullet content into note.",
 	"author": "Obsidian",
